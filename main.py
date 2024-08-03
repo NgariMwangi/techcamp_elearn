@@ -12,7 +12,7 @@ base_url_userprogress = 'http://167.71.54.75:8081/'
 def index():
     try:
         response = requests.get(f'{base_url_journeys}/categories')
-        response = requests.get(f'{base_url_journeys}/journeys/{journeyId}')
+        # response = requests.get(f'{base_url_journeys}/journeys/{journeyId}')
         response.raise_for_status()
         categories = response.json()
         total=len(categories)
@@ -137,34 +137,39 @@ def get_data():
 @app.route('/journeys/<int:journey_id>', methods=['GET'])
 def get_journey(journey_id):
     try:
-        # Fetch journey details
+        # journey details
         response = requests.get(f'{base_url_journeys}/journeys/{journey_id}')
         response.raise_for_status()
         journey = response.json()
+        print("journey", journey)
 
-        # Fetch sections for the journey
+        # sections for the journey
         section_response = requests.get(
             f'{base_url_journeys}/journeys/{journey_id}/sections')
         section_response.raise_for_status()
         sections = section_response.json()
+        print("sections", sections)
 
-        # Fetch topics for each section
+        # topics for each section
         for section in sections:
             section_id = section["id"]
             topics_response = requests.get(
                 f'{base_url_journeys}/sections/{section_id}/topics')
             topics_response.raise_for_status()
             section['topics'] = topics_response.json()
-            topics = section['topics']
+            print("topics", section['topics'])
 
     except requests.RequestException as e:
         print(f"An error occurred: {e}")
         journey = {}
         sections = []
 
-        section_id = section["id"]
-        section_id = section["id"]
-    return render_template('client/topicContent.html', journey=journey, sections=sections, section=section, section_id=section_id)
+    # Ensure variables are defined even in case of an error
+    section = sections[0] if sections else {}
+    section_id = section.get("id", None) if section else None
+    topics = section.get('topics', []) if section else []
+
+    return render_template('courseTopics.html', journey=journey, sections=sections, section=section, section_id=section_id, topics=topics)
 
 # @app.route('/journeys/<int:journey_id>/sections')
 # def get_sections_by_journey_id(journey_id):
@@ -243,9 +248,6 @@ def get_topics_by_level_id(section_id, level_id):
     return render_template('client/section_topics.html', section_id=section_id, level=level, topics=topics)
 
 
-
-
-
 @app.route('/sections/<int:section_id>/levels')
 def get_levels_by_section_id(section_id):
     try:
@@ -264,3 +266,6 @@ def get_levels_by_section_id(section_id):
         section = {}
 
     return render_template('client/levels.html', levels=levels, section=section)
+
+
+app.run(debug=True)
